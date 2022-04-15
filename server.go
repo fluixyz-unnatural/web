@@ -58,7 +58,6 @@ func main() {
 		response_header += "Date: " + string(time.Now().Format("Mon, 2 Jan 2006 15:04:05 GMT")) + "\r\n"
 		response_header += "Host: FlflServer/0.1\r\n"
 		response_header += "Connection: Close\r\n"
-		response_header += "Content-Type: text/html\r\n"
 
 		response_body := ""
 
@@ -71,6 +70,7 @@ func main() {
 		}
 
 		response_header += "Content-Length: " + strconv.Itoa(len(response_body)) + "\r\n"
+		response_header += "Content-Type: " + memetypes(static_file_path) + "\r\n"
 
 		response := response_line + response_header + "\r\n" + response_body
 
@@ -89,6 +89,7 @@ func main() {
 }
 
 func start(f HandleConnection) error {
+	fmt.Println("listening... ")
 	ln, err := net.Listen("tcp", "0.0.0.0:8080")
 	if err != nil {
 		return err
@@ -108,4 +109,20 @@ func start(f HandleConnection) error {
 			return nil
 		}
 	}
+}
+
+func memetypes(filename string) string {
+	switch parts := strings.Split(filename, "."); parts[len(parts)-1] {
+	case "html":
+		return "text/html"
+	case "css":
+		return "text/css"
+	case "webp":
+		return "image/webp"
+	case "png":
+		return "image/png"
+	case "jpg":
+		return "image/jpg"
+	}
+	return "text/html"
 }
