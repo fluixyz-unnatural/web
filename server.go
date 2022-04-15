@@ -19,24 +19,19 @@ func main() {
 
 	BASE_DIR, err := filepath.Abs("./")
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
 	STATIC_ROOT := BASE_DIR + "/static"
 
 	handleConn := func(c net.Conn) error {
 		buf := make([]byte, 1024)
-		fmt.Println("handle Conn")
-		defer fmt.Println("handle End")
 		s := ""
 		for {
 			n, err := c.Read(buf)
-			fmt.Println(n, err)
 			if err != nil {
 				return err
 			}
 			if n == 0 {
-				fmt.Println("0")
 				break
 			}
 			s += string(buf[:n])
@@ -44,7 +39,6 @@ func main() {
 				break
 			}
 		}
-		fmt.Println("===request===")
 		// リクエストライン
 		request_line := strings.Split(strings.Split(s, "\r\n")[0], " ")
 		// request_method := request_line[0]
@@ -52,18 +46,12 @@ func main() {
 		// http_version := request_line[2]
 
 		// ヘッダー
-		request_header := strings.Split(strings.Split(s, "\r\n\r\n")[0], "\r\n")[1:]
+		// request_header := strings.Split(strings.Split(s, "\r\n\r\n")[0], "\r\n")[1:]
 
 		// ボディ
-		request_body := strings.Split(s, "\r\n\r\n")[1]
+		// request_body := strings.Split(s, "\r\n\r\n")[1]
 
-		fmt.Println("===line===")
 		static_file_path := (STATIC_ROOT + request_path)
-		fmt.Println(static_file_path)
-		fmt.Println("===header===")
-		fmt.Println(request_header)
-		fmt.Println("===body===")
-		fmt.Println(request_body)
 
 		response_line := "HTTP/1.1 200 OK \r\n"
 		response_header := ""
@@ -76,7 +64,6 @@ func main() {
 
 		bytes, err := ioutil.ReadFile(static_file_path)
 		if err != nil {
-			fmt.Println("file can not open", err)
 			response_line = "HTTP/1.1 404 Not Found \r\n"
 			response_body = "<html><body><h1>404 Not Found</h1></body></html>\r\n"
 		} else {
@@ -86,16 +73,18 @@ func main() {
 		response_header += "Content-Length: " + strconv.Itoa(len(response_body)) + "\r\n"
 
 		response := response_line + response_header + "\r\n" + response_body
-		fmt.Println("==response==")
-		fmt.Println(response)
-		fmt.Println("===")
+
+		// fmt.Println("==response==")
+		// fmt.Println(response)
+		// fmt.Println("===")
 
 		fmt.Fprint(c, response)
 		return nil
 	}
-
-	if err := start(handleConn); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+	for {
+		if err := start(handleConn); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
 	}
 }
 
@@ -105,7 +94,6 @@ func start(f HandleConnection) error {
 		return err
 	}
 	defer ln.Close()
-	fmt.Println("accept!")
 	conn, err := ln.Accept()
 	if err != nil {
 		return err
