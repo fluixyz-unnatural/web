@@ -3,11 +3,13 @@ package main
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
-	"unicode/utf8"
 )
 
 type HandleConnection func(c net.Conn) error
@@ -15,36 +17,73 @@ type HandleConnection func(c net.Conn) error
 func main() {
 	fmt.Println("=== サーバーを起動します ===")
 
+	BASE_DIR, err := filepath.Abs("./")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	STATIC_ROOT := BASE_DIR + "/static"
+
 	handleConn := func(c net.Conn) error {
 		buf := make([]byte, 1024)
 		fmt.Println("handle Conn")
 		defer fmt.Println("handle End")
+		s := ""
 		for {
 			n, err := c.Read(buf)
 			fmt.Println(n, err)
 			if err != nil {
-				fmt.Println("c read err", err)
 				return err
 			}
 			if n == 0 {
 				fmt.Println("0")
 				break
 			}
-			s := string(buf[:n])
-			fmt.Println(s)
+			s += string(buf[:n])
 			if string(buf[n-4:n]) == "\r\n\r\n" {
 				break
 			}
 		}
+		fmt.Println("===request===")
+		// リクエストライン
+		request_line := strings.Split(strings.Split(s, "\r\n")[0], " ")
+		// request_method := request_line[0]
+		request_path := request_line[1]
+		// http_version := request_line[2]
 
-		response_body := "<html><body><h1>It works!</h1></body></html>\r\n"
+		// ヘッダー
+		request_header := strings.Split(strings.Split(s, "\r\n\r\n")[0], "\r\n")[1:]
+
+		// ボディ
+		request_body := strings.Split(s, "\r\n\r\n")[1]
+
+		fmt.Println("===line===")
+		static_file_path := (STATIC_ROOT + request_path)
+		fmt.Println(static_file_path)
+		fmt.Println("===header===")
+		fmt.Println(request_header)
+		fmt.Println("===body===")
+		fmt.Println(request_body)
+
 		response_line := "HTTP/1.1 200 OK \r\n"
 		response_header := ""
 		response_header += "Date: " + string(time.Now().Format("Mon, 2 Jan 2006 15:04:05 GMT")) + "\r\n"
 		response_header += "Host: FlflServer/0.1\r\n"
-		response_header += "Content-Length: " + strconv.Itoa(utf8.RuneCountInString(response_body)) + "\r\n"
 		response_header += "Connection: Close\r\n"
 		response_header += "Content-Type: text/html\r\n"
+
+		response_body := ""
+
+		bytes, err := ioutil.ReadFile(static_file_path)
+		if err != nil {
+			fmt.Println("file can not open", err)
+			response_line = "HTTP/1.1 404 Not Found \r\n"
+			response_body = "<html><body><h1>404 Not Found</h1></body></html>\r\n"
+		} else {
+			response_body = string(bytes)
+		}
+
+		response_header += "Content-Length: " + strconv.Itoa(len(response_body)) + "\r\n"
 
 		response := response_line + response_header + "\r\n" + response_body
 		fmt.Println("==response==")
