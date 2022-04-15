@@ -41,6 +41,7 @@ func main() {
 		}
 		// リクエストライン
 		request_line := strings.Split(strings.Split(s, "\r\n")[0], " ")
+		fmt.Println(strings.Join(request_line," "))
 		// request_method := request_line[0]
 		request_path := request_line[1]
 		// http_version := request_line[2]
